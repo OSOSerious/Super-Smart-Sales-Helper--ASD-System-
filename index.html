@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASDSystem UI</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        #app {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #333;
+        }
+        input, button {
+            margin: 5px 0;
+            padding: 10px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        pre {
+            background-color: #f1f1f1;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <h1>ASDSystem UI</h1>
+        
+        <h2>Add Task</h2>
+        <input v-model="newTask.priority" placeholder="Priority">
+        <input v-model="newTask.agent_type" placeholder="Agent Type">
+        <input v-model="newTask.task_description" placeholder="Task Description">
+        <button @click="addTask">Add Task</button>
+
+        <h2>Run System</h2>
+        <button @click="runSystem">Run System</button>
+
+        <h2>Collaborate</h2>
+        <input v-model="collaborationPrompt" placeholder="Collaboration Prompt">
+        <button @click="collaborate">Collaborate</button>
+
+        <h2>Knowledge Graph</h2>
+        <button @click="getKnowledgeGraph">Get Knowledge Graph</button>
+        <pre>{{ knowledgeGraph }}</pre>
+
+        <h2>Results</h2>
+        <pre>{{ results }}</pre>
+    </div>
+
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                newTask: {
+                    priority: '',
+                    agent_type: '',
+                    task_description: ''
+                },
+                collaborationPrompt: '',
+                results: '',
+                knowledgeGraph: ''
+            },
+            methods: {
+                addTask() {
+                    axios.post('/add_task', this.newTask)
+                        .then(response => {
+                            this.results = response.data.result;
+                            this.newTask = { priority: '', agent_type: '', task_description: '' };
+                        });
+                },
+                runSystem() {
+                    axios.post('/run_system')
+                        .then(response => {
+                            this.results = response.data.result;
+                        });
+                },
+                collaborate() {
+                    axios.post('/collaborate', { prompt: this.collaborationPrompt })
+                        .then(response => {
+                            this.results = response.data.result;
+                            this.collaborationPrompt = '';
+                        });
+                },
+                getKnowledgeGraph() {
+                    axios.get('/get_knowledge_graph')
+                        .then(response => {
+                            this.knowledgeGraph = JSON.stringify(response.data, null, 2);
+                        });
+                }
+            }
+        });
+    </script>
+</body>
+</html>

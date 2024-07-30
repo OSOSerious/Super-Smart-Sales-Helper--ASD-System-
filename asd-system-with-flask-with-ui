@@ -1,27 +1,24 @@
+import os
+import nltk
+import ssl
+from flask import Flask, render_template, request, jsonify
 import networkx as nx
 from sklearn.ensemble import RandomForestRegressor
 from nltk.sentiment import SentimentIntensityAnalyzer
-import numpy as np
-import pandas as pd
-from AmazonAPI  import AmazonAPI
-from notifiers import get_notifier
-import time
-from threading import Thread
 from queue import PriorityQueue
 
-# Load configuration
-config = {
-    'access_key': 'YOUR_ACCESS_KEY',
-    'secret_key': 'YOUR_SECRET_KEY',
-    'partner_tag': 'YOUR_PARTNER_TAG',
-    'country': 'US'
-}
+# SSL workaround for NLTK downloads
+try:
+    _create_unverified_https_context = ssl._create_unverified_context
+except AttributeError:
+    pass
+else:
+    ssl._create_default_https_context = _create_unverified_https_context
 
-# Initialize Amazon API client
-amazon = AmazonAPI(**config)
+nltk.download('vader_lexicon')
 
-# Initialize notifier
-email = get_notifier('email')
+# Get the absolute path of the directory containing this script
+basedir = os.path.abspath(os.path.dirname(__file__))
 
 class KnowledgeGraph:
     def __init__(self):
@@ -60,8 +57,6 @@ class DecisionMakingEngine:
         return self.sentiment_analyzer.polarity_scores(text)
 
     def make_pricing_decision(self, product, market_trends, competitor_prices, inventory_levels):
-        # Implement pricing decision logic
-        # This is a placeholder implementation
         avg_competitor_price = sum(competitor_prices.values()) / len(competitor_prices)
         if inventory_levels > 100:
             return min(avg_competitor_price * 0.9, product['current_price'])
@@ -76,7 +71,6 @@ class Agent:
         self.dme = decision_engine
 
     def execute_task(self, task_description):
-        # Implementation would depend on the specific agent type
         pass
 
 class ProductAgent(Agent):
@@ -99,16 +93,12 @@ class ProductAgent(Agent):
             return f"Updated inventory for {product}. Current level: {inventory_level}"
 
     def research_top_selling_products(self, category):
-        # This would typically involve calling the Amazon API
-        # For now, we'll return dummy data
         return [
             {'asin': 'B08F7N', 'name': 'Top Product 1', 'category': category, 'price': 99.99},
             {'asin': 'C09G8M', 'name': 'Top Product 2', 'category': category, 'price': 149.99},
         ]
 
     def analyze_prices(self, product):
-        # This would typically involve calling APIs or web scraping
-        # For now, we'll return dummy data
         return {
             'amazon_price': 99.99,
             'competitor1_price': 109.99,
@@ -116,8 +106,6 @@ class ProductAgent(Agent):
         }
 
     def update_inventory(self, product):
-        # This would typically involve updating a database
-        # For now, we'll return a dummy inventory level
         return 50
 
 class CustomerAgent(Agent):
@@ -139,16 +127,12 @@ class CustomerAgent(Agent):
             return f"Generated personalized marketing campaign for {segment}"
 
     def create_customer_profiles(self):
-        # This would typically involve analyzing customer data
-        # For now, we'll return dummy profiles
         return [
             {'id': 'C001', 'name': 'John Doe', 'preferences': ['electronics', 'books']},
             {'id': 'C002', 'name': 'Jane Smith', 'preferences': ['fashion', 'home decor']},
         ]
 
     def generate_marketing_campaign(self, segment):
-        # This would typically involve creating targeted marketing content
-        # For now, we'll return a dummy campaign
         return f"Special offers on top products for {segment} customers!"
 
 class MarketAgent(Agent):
@@ -169,24 +153,18 @@ class MarketAgent(Agent):
             return "Analyzed global market trends"
 
     def research_market_trends(self, industry):
-        # This would typically involve analyzing market data
-        # For now, we'll return dummy trends
         return {
             'growing_segments': ['Smart Home', 'Wearables'],
             'declining_segments': ['Traditional PCs', 'Basic Cell Phones'],
         }
 
     def monitor_competitors(self, category):
-        # This would typically involve gathering competitor data
-        # For now, we'll return dummy competitor info
         return {
             'Competitor A': {'market_share': 0.3, 'top_product': 'Product X'},
             'Competitor B': {'market_share': 0.25, 'top_product': 'Product Y'},
         }
 
     def analyze_trends(self):
-        # This would typically involve analyzing various data sources
-        # For now, we'll return dummy trend analysis
         return {
             'emerging_technologies': ['AI', '5G', 'Quantum Computing'],
             'consumer_behavior_shifts': ['Increased online shopping', 'Focus on sustainability'],
@@ -213,26 +191,18 @@ class SalesAgent(Agent):
             return f"Closed deal for {product}"
 
     def generate_leads(self, product):
-        # This would typically involve analyzing customer data and market trends
-        # For now, we'll return dummy leads
         return [
             {'id': 'L001', 'name': 'Company A', 'interest_level': 'High'},
             {'id': 'L002', 'name': 'Company B', 'interest_level': 'Medium'},
         ]
 
     def negotiate_price(self, product):
-        # This would typically involve a back-and-forth process
-        # For now, we'll return a dummy negotiation result
         return {'final_price': 89.99, 'discount': 0.1}
 
     def close_deal(self, product):
-        # This would typically involve finalizing the sale
-        # For now, we'll return a dummy deal result
         return {'product': product, 'quantity': 100, 'total_value': 8999}
 
     def update_sales_metrics(self, deal_result):
-        # This would typically involve updating sales databases
-        # For now, we'll just print the result
         print(f"Updated sales metrics: Sold {deal_result['quantity']} units of {deal_result['product']}")
 
 class ASDSystem:
@@ -285,12 +255,10 @@ class ASDSystem:
             product = prompt.split("for ")[1]
             pa_task = f"Inventory Management: Update inventory levels for {product} and alert Sales Agent (SA) about stock availability"
             sa_task = f"Price Negotiation: Negotiate prices with customers for {product} based on inventory levels and market trends"
-            dme_task = f"Pricing Decisions: Make autonomous pricing decisions for {product} based on market trends, competitor prices, and inventory levels"
             
             self.tm.add_task(1, "Product", pa_task)
             self.tm.add_task(2, "Sales", sa_task)
             
-            # Execute DME task immediately
             product_info = self.kg.get_node_attributes(product)
             market_trends = self.kg.get_node_attributes("global")['TrendAnalysis']
             competitor_prices = self.kg.get_node_attributes(product.split()[0])['CompetitorInfo']
@@ -301,21 +269,133 @@ class ASDSystem:
             
             return f"Made autonomous decisions for {product}"
 
-# Usage example
-asd_system = ASDSystem()
+    def add_task(self, priority, agent_type, task_description):
+        self.tm.add_task(priority, agent_type, task_description)
+        return f"Task added: {agent_type} - {task_description}"
 
-# Add some tasks
-asd_system.tm.add_task(1, "Product", "Product Research: Research top-selling products in electronics")
-asd_system.tm.add_task(2, "Customer", "Sentiment Analysis: Analyze customer reviews for iPhone 12")
-asd_system.tm.add_task(3, "Market", "Market Research: Research market trends for smartphones")
-asd_system.tm.add_task(4, "Sales", "Lead Generation: Generate leads for iPhone 12")
+    def get_knowledge_graph(self):
+        return dict(self.kg.graph.nodes(data=True))
 
-# Run the system
-asd_system.run()
+# Embedded HTML template
+html_template = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASDSystem UI</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        #app {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #333;
+        }
+        input, button {
+            margin: 5px 0;
+            padding: 10px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        pre {
+            background-color: #f1f1f1;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <h1>ASDSystem UI</h1>
+        
+        <h2>Add Task</h2>
+        <input v-model="newTask.priority" placeholder="Priority">
+        <input v-model="newTask.agent_type" placeholder="Agent Type">
+        <input v-model="newTask.task_description" placeholder="Task Description">
+        <button @click="addTask">Add Task</button>
 
-# Initiate collaborations
-print(asd_system.collaborate("Product-Price-Customer (PPC) Analysis: Collaborate to analyze iPhone 12 features, pricing, and customer preferences"))
-print(asd_system.collaborate("Sales Strategy Development: Develop sales strategies for iPhone 12 based on market trends, customer profiles, and competitor analysis"))
-print(asd_system.collaborate("Autonomous Decision-Making: Make autonomous decisions on pricing, inventory management, and sales strategies for iPhone 12"))
+        <h2>Run System</h2>
+        <button @click="runSystem">Run System</button>
 
-# Price monitoring functionality
+        <h2>Collaborate</h2>
+        <input v-model="collaborationPrompt" placeholder="Collaboration Prompt">
+        <button @click="collaborate">Collaborate</button>
+
+        <h2>Knowledge Graph</h2>
+        <button @click="getKnowledgeGraph">Get Knowledge Graph</button>
+        <pre>{{ knowledgeGraph }}</pre>
+
+        <h2>Results</h2>
+        <pre>{{ results }}</pre>
+    </div>
+
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                newTask: {
+                    priority: '',
+                    agent_type: '',
+                    task_description: ''
+                },
+                collaborationPrompt: '',
+                results: '',
+                knowledgeGraph: ''
+            },
+            methods: {
+                addTask() {
+                    axios.post('/add_task', this.newTask)
+                        .then(response => {
+                            this.results = response.data.result;
+                            this.newTask = { priority: '', agent_type: '', task_description: '' };
+                        });
+                },
+                runSystem() {
+                    axios.post('/run_system')
+                        .then(response => {
+                            this.results = response.data.result;
+                        });
+                },
+                collaborate() {
+                    axios.post('/collaborate', { prompt: this.collaborationPrompt })
+                        .then(response => {
+                            this.results = response.data.result;
+                            this.collaborationPrompt = '';
+                        });
+                },
+                getKnowledgeGraph() {
+                    axios.get('/get_knowledge_graph')
+                        .then(response => {
+                            this.knowledgeGraph = JSON.stringify(response.data, null, 2);
+                        });
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+"""
